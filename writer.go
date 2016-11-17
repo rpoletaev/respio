@@ -3,7 +3,6 @@ package respio
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"strconv"
 )
@@ -27,10 +26,8 @@ func (w *RESPWriter) SendArray(length int64) error {
 
 //SendBulkString convert val to Bulk string format
 func (w *RESPWriter) SendBulkString(val string) error {
-	println("sended string is: ", val)
 	blkLen := []byte{'$'}
 	blkLen = strconv.AppendInt(blkLen, int64(len(val)), 10)
-	println("blkLen is ", string(blkLen))
 	w.writer.Write(blkLen)
 	w.writer.WriteString("\r\n")
 	w.writer.WriteString(val)
@@ -77,7 +74,6 @@ func (w *RESPWriter) SendCmd(cmd string, prs []interface{}) error {
 	w.writer.WriteString("\r\n")
 	err := w.SendBulkString(cmd)
 
-	fmt.Printf("from WRITER prs is %v\n", prs)
 	if prs == nil {
 		return nil
 	}
@@ -111,6 +107,7 @@ func (w *RESPWriter) SendCmd(cmd string, prs []interface{}) error {
 func (w *RESPWriter) SendNil() error {
 	w.writer.Write([]byte{'$', '-', '1'})
 	_, err := w.writer.WriteString("\r\n")
+	w.Flush()
 	return err
 }
 
@@ -119,6 +116,7 @@ func (w *RESPWriter) SendError(err string) error {
 	w.writer.Write([]byte{'-'})
 	w.writer.WriteString(err)
 	_, werr := w.writer.WriteString("\r\n")
+	w.Flush()
 	return werr
 }
 
@@ -127,6 +125,7 @@ func (w *RESPWriter) SendSimpleString(str string) error {
 	w.writer.Write([]byte{'+'})
 	w.writer.WriteString(str)
 	_, werr := w.writer.WriteString("\r\n")
+	w.Flush()
 	return werr
 }
 

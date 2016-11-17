@@ -35,7 +35,6 @@ func (r *RESPReader) getLine() ([]byte, error) {
 
 func (r *RESPReader) Read() (interface{}, error) {
 	line, err := r.getLine()
-	fmt.Printf("Readed line is %s\n", string(line))
 	if err != nil {
 		return nil, err
 	}
@@ -50,18 +49,14 @@ func (r *RESPReader) Read() (interface{}, error) {
 	case '$':
 		return r.parseBulk(line[1:])
 	case '*':
-		fmt.Println("Is a asterisk")
 		length, err := strconv.ParseInt(string(line[1:]), 10, 64)
-		println("length is ", length)
 		if length == -1 && err == nil {
 			return nil, nil
 		}
 
 		response := make([]interface{}, length)
 		for i := range response {
-			println("array iteration ", i)
 			response[i], err = r.Read()
-			fmt.Printf("response %v\n", response[i])
 			if err != nil {
 				return nil, err
 			}
@@ -90,7 +85,7 @@ func (r *RESPReader) ReadCommand() (string, []interface{}, error) {
 
 		return string(rawSlice[0].([]byte)), rawSlice[1:], nil
 	default:
-		return "", nil, fmt.Errorf("Wrong command format. Command must be array")
+		return "", nil, fmt.Errorf("Wrong command format. Command must be an array")
 	}
 }
 
@@ -108,6 +103,15 @@ func (r *RESPReader) parseBulk(src []byte) (interface{}, error) {
 	_, err = io.ReadFull(r.reader, bulk)
 	if err != nil {
 		return nil, err
+	}
+	// must read emty line to delete "\r\n"
+	line, _, err := r.reader.ReadLine()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(line) > 0 {
+		return nil, fmt.Errorf("Wrong BulkString format: Body of bulk greater then bulk length")
 	}
 
 	return bulk, nil
